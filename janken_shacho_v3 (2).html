@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>じゃんけん社長 v3</title>
+</head>
+<body>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+#app{max-width:390px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN',sans-serif;background:#FFF8F0;min-height:100vh;color:#2D1B00;}
+.screen{display:none;}.screen.active{display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:#FF8C00;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;}
+.topbar-title{font-size:14px;font-weight:700;color:#fff;}
+.topbar-right{display:flex;gap:6px;}
+.pill{font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;}
+.pill-gold{background:#FFF3CD;color:#7B4F00;}
+.pill-pt{background:#E8F4FD;color:#0D5FA0;}
+.pill-lv{background:#F0EEFF;color:#4A3AB0;}
+.nav{display:grid;grid-template-columns:repeat(5,1fr);background:#FF8C00;}
+.nav-btn{padding:8px 2px;font-size:9px;font-weight:700;color:#FFD999;background:transparent;border:none;cursor:pointer;text-align:center;border-bottom:3px solid transparent;transition:all 0.15s;}
+.nav-btn.active{color:#fff;border-bottom-color:#fff;background:#E67A00;}
+.content{flex:1;padding:12px;overflow-y:auto;}
+.card{background:#fff;border-radius:14px;border:1.5px solid #FFD5A0;padding:12px;margin-bottom:10px;box-shadow:0 2px 8px rgba(255,140,0,0.08);}
+.card-title{font-size:11px;font-weight:700;color:#E67A00;letter-spacing:0.08em;margin-bottom:8px;}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px;}
+.stat-box{background:#FFF8F0;border-radius:10px;padding:8px 12px;border:1.5px solid #FFD5A0;}
+.stat-lbl{font-size:10px;color:#B07030;margin-bottom:2px;}
+.stat-val{font-size:18px;font-weight:700;color:#2D1B00;}
+.stat-sub{font-size:10px;color:#C08840;margin-top:1px;}
+.xp-track{height:6px;background:#FFE8C0;border-radius:3px;overflow:hidden;margin:5px 0 2px;}
+.xp-fill{height:100%;background:#FF8C00;transition:width 0.5s;border-radius:3px;}
+.btn{display:block;width:100%;padding:13px;font-size:14px;font-weight:700;border-radius:12px;border:2px solid #FFD5A0;background:#fff;color:#2D1B00;cursor:pointer;transition:all 0.15s;margin-bottom:8px;text-align:center;}
+.btn:hover{background:#FFF3E0;}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:#FF8C00;color:#fff;border-color:#FF8C00;}
+.btn-primary:hover{background:#E67A00;border-color:#E67A00;}
+.btn-green{background:#22C55E;color:#fff;border-color:#22C55E;}
+.btn-green:hover{background:#16A34A;}
+.btn-blue{background:#3B82F6;color:#fff;border-color:#3B82F6;}
+.btn-gacha{background:linear-gradient(135deg,#FF8C00,#FF4D8C);color:#fff;border:none;font-size:15px;}
+.btn-danger{background:#EF4444;color:#fff;border-color:#EF4444;}
+.action-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px;}
+.action-card{background:#FFF8F0;border-radius:12px;border:2px solid #FFD5A0;padding:10px;cursor:pointer;transition:all 0.15s;}
+.action-card:hover{border-color:#FF8C00;background:#FFF3E0;}
+.action-card.selected{border-color:#FF8C00;background:#FFF3E0;}
+.action-icon{font-size:24px;margin-bottom:4px;}
+.action-name{font-size:13px;font-weight:700;color:#2D1B00;}
+.action-desc{font-size:10px;color:#B07030;margin-top:2px;line-height:1.3;}
+.risk-tag{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;display:inline-block;margin-top:4px;}
+.risk-none{background:#DCFCE7;color:#14532D;}.risk-low{background:#FEF9C3;color:#713F12;}.risk-mid{background:#FED7AA;color:#7C2D12;}.risk-high{background:#FECACA;color:#7F1D1D;}.risk-max{background:#EDE9FE;color:#4C1D95;}
+.jk-btn{width:88px;height:88px;font-size:40px;border-radius:16px;border:3px solid #FFD5A0;background:#FFF8F0;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+.jk-btn:hover{transform:scale(1.12);border-color:#FF8C00;background:#FFF3E0;}
+.jk-btn:active{transform:scale(0.95);}
+.result-badge{display:inline-block;font-size:26px;font-weight:700;padding:10px 28px;border-radius:16px;margin-bottom:6px;}
+.win-badge{background:#DCFCE7;color:#14532D;border:2px solid #22C55E;}
+.lose-badge{background:#FEE2E2;color:#7F1D1D;border:2px solid #EF4444;}
+.draw-badge{background:#FEF9C3;color:#713F12;border:2px solid #EAB308;}
+.rarity-n{color:#6B7280;}.rarity-r{color:#3B82F6;}.rarity-sr{color:#7C3AED;}.rarity-ssr{color:#D97706;}.rarity-ur{color:#DC2626;}
+.badge-n{background:#F3F4F6;color:#6B7280;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;}
+.badge-r{background:#EFF6FF;color:#2563EB;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;}
+.badge-sr{background:#F5F3FF;color:#6D28D9;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;}
+.badge-ssr{background:#FFFBEB;color:#B45309;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;}
+.badge-ur{background:#FFF1F2;color:#BE123C;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;}
+.staff-card{background:#FFF8F0;border-radius:12px;border:1.5px solid #FFD5A0;padding:10px;margin-bottom:8px;}
+.staff-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.staff-avatar{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;background:#FFE8C0;flex-shrink:0;}
+.staff-name{font-size:13px;font-weight:700;color:#2D1B00;}
+.staff-role{font-size:10px;color:#B07030;margin-top:1px;}
+.staff-xp-track{height:5px;background:#FFE8C0;border-radius:3px;overflow:hidden;margin:4px 0;}
+.staff-xp-fill{height:100%;background:#FF8C00;border-radius:3px;transition:width 0.4s;}
+.stat-pills{display:flex;gap:4px;flex-wrap:wrap;}
+.stat-pill{font-size:10px;background:#FFF3E0;border:1px solid #FFD5A0;padding:2px 7px;border-radius:99px;color:#B07030;font-weight:600;}
+.office-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}
+.office-cell{aspect-ratio:1;background:#FFF8F0;border-radius:10px;border:2px solid #FFD5A0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:all 0.15s;position:relative;}
+.office-cell:hover{border-color:#FF8C00;transform:scale(1.05);}
+.office-cell.empty{border-style:dashed;opacity:0.6;}
+.office-cell.selected-cell{border-color:#FF8C00;background:#FFF3E0;box-shadow:0 0 0 3px rgba(255,140,0,0.3);}
+.office-cell .cell-lbl{font-size:7px;color:#B07030;margin-top:2px;text-align:center;line-height:1.2;}
+.shop-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#FFF8F0;border-radius:10px;border:1.5px solid #FFD5A0;margin-bottom:6px;}
+.log-scroll{max-height:72px;overflow-y:auto;background:#FFF8F0;border-radius:8px;padding:6px 10px;border:1px solid #FFD5A0;}
+.log-item{font-size:10px;color:#B07030;padding:2px 0;border-bottom:1px solid #FFE8C0;line-height:1.4;}
+.gacha-card-anim{animation:gpop 0.5s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes gpop{0%{transform:scale(0.5) rotate(-5deg);opacity:0;}100%{transform:scale(1) rotate(0);opacity:1;}}
+.event-banner{background:#FFF3CD;border-radius:12px;padding:10px 12px;margin-bottom:10px;border-left:4px solid #FF8C00;}
+.modal-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:0;}
+.modal-box{background:#fff;border-radius:16px;padding:20px;margin:16px;width:100%;max-width:340px;border:2px solid #FFD5A0;}
+</style>
+
+<div id="app" style="position:relative;">
+
+<div id="setup-screen" class="screen active">
+  <div style="background:linear-gradient(180deg,#FF8C00,#FFB347);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;">
+    <div style="font-size:72px;margin-bottom:12px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.2));">🏢</div>
+    <div style="font-size:28px;font-weight:700;color:#fff;margin-bottom:4px;">じゃんけん社長</div>
+    <div style="font-size:13px;color:#FFE8C0;margin-bottom:32px;">Ver 2.0 — 社員を育てて帝国を築け</div>
+    <div style="width:100%;max-width:320px;background:#fff;border-radius:16px;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,0.15);">
+      <div style="font-size:11px;font-weight:700;color:#B07030;margin-bottom:6px;">会社名</div>
+      <input id="s-cname" type="text" maxlength="20" placeholder="例: 株式会社スタートアップ" style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:2px solid #FFD5A0;background:#FFF8F0;color:#2D1B00;outline:none;margin-bottom:12px;font-family:inherit;"/>
+      <div style="font-size:11px;font-weight:700;color:#B07030;margin-bottom:6px;">社長名</div>
+      <input id="s-pname" type="text" maxlength="10" placeholder="例: 田中" style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:2px solid #FFD5A0;background:#FFF8F0;color:#2D1B00;outline:none;margin-bottom:16px;font-family:inherit;"/>
+      <button class="btn btn-primary" onclick="setupGame()">🚀 創業する！</button>
+    </div>
+  </div>
+</div>
+
+<div id="main-screen" class="screen">
+  <div class="topbar">
+    <div class="topbar-title" id="tb-co">会社名</div>
+    <div class="topbar-right">
+      <span class="pill pill-gold" id="tb-gold">💰100万</span>
+      <span class="pill pill-pt" id="tb-pt">🎯0pt</span>
+      <span class="pill pill-lv" id="tb-lv">Lv1</span>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="nav-btn active" onclick="switchTab('home')" id="tab-home">🏢<br>経営</button>
+    <button class="nav-btn" onclick="switchTab('staff')" id="tab-staff">👥<br>社員</button>
+    <button class="nav-btn" onclick="switchTab('office')" id="tab-office">🏠<br>オフィス</button>
+    <button class="nav-btn" onclick="switchTab('gacha')" id="tab-gacha">🎰<br>採用</button>
+    <button class="nav-btn" onclick="switchTab('more')" id="tab-more">📊<br>記録</button>
+  </div>
+  <div class="content" id="main-content">
+    <div id="view-home"></div>
+    <div id="view-staff" style="display:none;"></div>
+    <div id="view-office" style="display:none;"></div>
+    <div id="view-gacha" style="display:none;"></div>
+    <div id="view-more" style="display:none;"></div>
+  </div>
+</div>
+
+<div id="jk-screen" class="screen">
+  <div class="topbar">
+    <div class="topbar-title" id="jk-label">じゃんけん！</div>
+    <div class="topbar-right"><span class="pill pill-gold" id="jk-gold">💰</span></div>
+  </div>
+  <div class="content" style="display:flex;flex-direction:column;align-items:center;text-align:center;">
+    <div style="font-size:12px;color:#B07030;margin-bottom:16px;padding:10px 14px;background:#FFF8F0;border-radius:10px;border:1.5px solid #FFD5A0;width:100%;line-height:1.5;" id="jk-desc"></div>
+    <div style="display:flex;justify-content:center;gap:12px;margin-bottom:16px;" id="jk-hands">
+      <button class="jk-btn" onclick="playJK('グー')">✊</button>
+      <button class="jk-btn" onclick="playJK('チョキ')">✌️</button>
+      <button class="jk-btn" onclick="playJK('パー')">🖐️</button>
+    </div>
+    <div id="jk-result" style="display:none;width:100%;">
+      <div style="font-size:36px;margin-bottom:8px;" id="jk-vs"></div>
+      <div id="jk-outcome-badge"></div>
+      <div style="font-size:14px;color:#B07030;margin:8px 0 16px;font-weight:600;" id="jk-sub"></div>
+      <button class="btn btn-primary" style="font-size:16px;padding:16px;" onclick="afterJK()">次のターンへ ▶</button>
+    </div>
+    <div class="log-scroll" style="width:100%;margin-top:10px;" id="jk-log"></div>
+  </div>
+</div>
+
+<div id="gacha-screen" class="screen">
+  <div class="topbar">
+    <div class="topbar-title">採用ガチャ結果</div>
+    <div class="topbar-right"><span class="pill pill-gold" id="gr-gold">💰</span></div>
+  </div>
+  <div class="content" id="gacha-result-content" style="text-align:center;"></div>
+  <div style="padding:0 12px 16px;"><button class="btn btn-primary" onclick="closeGachaScreen()">← 戻る</button></div>
+</div>
+
+<div id="office-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:200;display:none;align-items:flex-end;justify-content:center;">
+  <div style="background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:390px;max-height:70vh;overflow-y:auto;">
+    <div id="office-modal-content"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const HANDS=['グー','チョキ','パー'];
+const HEMOJI={グー:'✊',チョキ:'✌️',パー:'🖐️'};
+const LEVELS=[
+  {lv:1,name:'個人事業',min:0},{lv:2,name:'小企業',min:300},{lv:3,name:'ベンチャー',min:800},
+  {lv:4,name:'中堅企業',min:2000},{lv:5,name:'上場企業',min:5000},{lv:6,name:'大企業',min:15000},
+  {lv:7,name:'世界企業',min:50000},{lv:8,name:'宇宙企業',min:200000},{lv:9,name:'銀河',min:1000000},{lv:10,name:'神企業',min:5000000},
+];
+
+const STAFF_DB=[
+  {id:1,name:'新卒A田',rarity:'N',emoji:'👶',role:'新卒',desc:'やる気だけは誰にも負けない',sales:3,tech:3,pr:3,luck:6,wage:10},
+  {id:2,name:'田中部長',rarity:'R',emoji:'👨‍💼',role:'営業部長',desc:'トーク力で商談を制す',sales:28,tech:5,pr:15,luck:8,wage:22},
+  {id:3,name:'天才エンジニア鈴木',rarity:'SR',emoji:'👨‍💻',role:'エンジニア',desc:'コードが速すぎる',sales:5,tech:48,pr:10,luck:12,wage:40},
+  {id:4,name:'伝説の起業家',rarity:'SSR',emoji:'⭐',role:'シリアル起業家',desc:'7社連続成功の経営の神',sales:42,tech:30,pr:36,luck:25,wage:80},
+  {id:5,name:'謎の猫社員',rarity:'UR',emoji:'🐱',role:'謎の存在',desc:'何者かは誰も知らない',sales:55,tech:55,pr:55,luck:99,wage:5},
+  {id:6,name:'山田さん',rarity:'N',emoji:'👩',role:'一般社員',desc:'普通が最強という哲学',sales:5,tech:5,pr:5,luck:5,wage:10},
+  {id:7,name:'ベテラン経理',rarity:'R',emoji:'📊',role:'経理',desc:'コスト削減の鬼',sales:5,tech:10,pr:5,luck:8,wage:20},
+  {id:8,name:'カリスマデザイナー',rarity:'SR',emoji:'🎨',role:'デザイナー',desc:'デザインで売上3倍の伝説',sales:15,tech:20,pr:42,luck:15,wage:35},
+  {id:9,name:'宇宙人インターン',rarity:'SSR',emoji:'👽',role:'インターン',desc:'地球の常識を超えた発想',sales:20,tech:52,pr:30,luck:30,wage:0},
+  {id:10,name:'寝坊王',rarity:'N',emoji:'😴',role:'遅刻の達人',desc:'10時半に来る。成果は出す',sales:8,tech:8,pr:3,luck:3,wage:8},
+  {id:11,name:'哲学者',rarity:'R',emoji:'🤔',role:'社内哲学者',desc:'「本質的か？」が口癖',sales:3,tech:8,pr:20,luck:10,wage:15},
+  {id:12,name:'広報の女神',rarity:'SR',emoji:'📢',role:'広報部長',desc:'プレスリリースで株価2倍',sales:20,tech:5,pr:52,luck:18,wage:38},
+  {id:13,name:'元大臣',rarity:'SSR',emoji:'🏛️',role:'顧問',desc:'コネが半端ない',sales:46,tech:5,pr:42,luck:20,wage:100},
+  {id:14,name:'新人ちゃん',rarity:'N',emoji:'🌸',role:'新入社員',desc:'失敗しながら成長中',sales:3,tech:3,pr:5,luck:7,wage:9},
+  {id:15,name:'天才数学者',rarity:'R',emoji:'🔢',role:'データサイエンティスト',desc:'数字で世界を解読',sales:5,tech:32,pr:8,luck:10,wage:28},
+  {id:16,name:'カリスマ営業',rarity:'SR',emoji:'💪',role:'エース営業',desc:'断られてから本番という精神',sales:52,tech:5,pr:20,luck:15,wage:36},
+  {id:17,name:'AI開発者',rarity:'SSR',emoji:'🤖',role:'AI研究員',desc:'AIと会話しながらコード',sales:10,tech:62,pr:20,luck:22,wage:90},
+  {id:18,name:'普通の田中',rarity:'N',emoji:'🙂',role:'普通の社員',desc:'特になし。安定はしている',sales:4,tech:4,pr:4,luck:4,wage:10},
+  {id:19,name:'元プロゲーマー',rarity:'R',emoji:'🎮',role:'ゲーム事業部長',desc:'反射神経は誰にも負けない',sales:15,tech:22,pr:15,luck:12,wage:18},
+  {id:20,name:'神のボケ師',rarity:'UR',emoji:'🌟',role:'伝説のボケ師',desc:'ボケるたびに商談成立',sales:82,tech:10,pr:82,luck:50,wage:200},
+];
+
+const RARITIES=['N','R','SR','SSR','UR'];
+const RARITY_WEIGHT=[55,25,12,6,2];
+const GACHA_COST_PT=10;
+
+const OFFICE_ITEMS=[
+  {id:'desk',emoji:'🖥️',name:'デスク',price:20,effect:'技術+5%',bonus:{tech:5}},
+  {id:'plant',emoji:'🌿',name:'観葉植物',price:15,effect:'運+5%',bonus:{luck:5}},
+  {id:'whiteboard',emoji:'📋',name:'ホワイトボード',price:25,effect:'広報+8%',bonus:{pr:8}},
+  {id:'coffee',emoji:'☕',name:'コーヒーマシン',price:30,effect:'全能力+3%',bonus:{sales:3,tech:3,pr:3,luck:3}},
+  {id:'bookshelf',emoji:'📚',name:'本棚',price:40,effect:'技術+10%',bonus:{tech:10}},
+  {id:'server',emoji:'🖥',name:'サーバー',price:80,effect:'技術+20%',bonus:{tech:20}},
+  {id:'trophy',emoji:'🏆',name:'トロフィー棚',price:60,effect:'営業+15%',bonus:{sales:15}},
+  {id:'fountain',emoji:'⛲',name:'噴水',price:100,effect:'全能力+8%',bonus:{sales:8,tech:8,pr:8,luck:8}},
+  {id:'rocket',emoji:'🚀',name:'ロケット模型',price:150,effect:'全能力+15%',bonus:{sales:15,tech:15,pr:15,luck:15}},
+  {id:'statue',emoji:'👑',name:'社長像',price:200,effect:'営業+30%',bonus:{sales:30}},
+  {id:'nap',emoji:'🛋️',name:'休憩スペース',price:50,effect:'社員回復+20%',bonus:{luck:10,pr:5}},
+  {id:'gym',emoji:'🏋️',name:'社内ジム',price:90,effect:'全能力+5%・体力UP',bonus:{sales:5,tech:5,pr:5,luck:8}},
+];
+
+const BONUS_EVENTS=[
+  {name:'四半期ボーナス',desc:'業績が好調なため全社員にボーナス！',effect:g=>{const bonus=Math.round(g.value*0.05+50);g.money+=bonus;return `+${bonus}万円のボーナス！`;}},
+  {name:'社員旅行',desc:'社員旅行で士気がアップ！',effect:g=>{g.staff.forEach(s=>{s.morale=Math.min(100,(s.morale||50)+20);});return '全社員の士気+20！';}},
+  {name:'新商品提案',desc:'社員が新商品アイデアを提案してきた！採用すると収益UP',effect:g=>{const gain=Math.round(80+Math.random()*120);g.money+=gain;g.value+=Math.round(gain*0.5);return `新商品収益 +${gain}万！`;}},
+  {name:'投資家来訪',desc:'投資家が興味を持っている！',effect:g=>{const gain=Math.round(g.value*0.1);g.value+=gain;return `企業価値 +${gain}万！`;}},
+];
+
+const REST_OPTS=['休暇中','フル稼働','残業中'];
+
+let G={};let logs=[];let pendingJK={};let selectedOfficeCell=-1;
+
+function initG(cname,pname){
+  G={company:cname||'株式会社スタートアップ',player:pname||'社長',
+     money:100,value:100,staff:[],wins:0,losses:0,draws:0,
+     turn:1,day:1,nextPayday:30,totalLabor:0,hired:0,
+     collected:new Set(),gachaCount:0,gachaPt:0,
+     office:Array(12).fill(null)};
+}
+
+function load(){
+  try{const s=localStorage.getItem('jks_v3');if(s){G=JSON.parse(s);G.collected=new Set(G._col||[]);}}catch(e){}
+}
+function save(){
+  try{const s={...G,_col:[...G.collected]};delete s.collected;localStorage.setItem('jks_v3',JSON.stringify(s));}catch(e){}
+}
+
+function getLv(){let c=LEVELS[0];for(const l of LEVELS){if(G.value>=l.min)c=l;else break;}return c;}
+function getLaborCost(){return G.staff.reduce((s,st)=>s+(st.onRest?Math.round(st.wage*0.7):st.wage),0);}
+function getOfficeBonus(){
+  const b={sales:0,tech:0,pr:0,luck:0};
+  G.office.forEach(id=>{if(!id)return;const it=OFFICE_ITEMS.find(x=>x.id===id);if(it?.bonus)Object.keys(it.bonus).forEach(k=>{b[k]=(b[k]||0)+it.bonus[k];});});
+  return b;
+}
+function getStaffBonus(key){
+  const ob=getOfficeBonus();
+  const base=G.staff.filter(s=>!s.onRest).reduce((s,st)=>s+(st[key]||0)*(1+(st.xp||0)/200),0);
+  return Math.round(base*(1+(ob[key]||0)/100));
+}
+function fmt(v){const av=Math.abs(v),sg=v<0?'-':'';if(av>=1000000)return sg+(av/1000000).toFixed(2)+'兆';if(av>=10000)return sg+(av/10000).toFixed(1)+'億';return sg+Math.round(av)+'万';}
+function addLog(msg){logs.unshift(msg);}
+
+function updateTop(){
+  const lv=getLv();
+  document.getElementById('tb-co').textContent=G.company;
+  document.getElementById('tb-gold').textContent='💰'+fmt(G.money);
+  document.getElementById('tb-pt').textContent='🎯'+G.gachaPt+'pt';
+  document.getElementById('tb-lv').textContent='Lv'+lv.lv+' '+lv.name;
+  document.getElementById('jk-gold').textContent='💰'+fmt(G.money);
+  document.getElementById('gr-gold').textContent='💰'+fmt(G.money);
+}
+
+function showScreen(id){document.querySelectorAll('#app>.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function switchTab(tab){
+  ['home','staff','office','gacha','more'].forEach(t=>{
+    document.getElementById('view-'+t).style.display=t===tab?'block':'none';
+    document.getElementById('tab-'+t).className='nav-btn'+(t===tab?' active':'');
+  });
+  if(tab==='home')renderHome();if(tab==='staff')renderStaff();
+  if(tab==='office')renderOffice();if(tab==='gacha')renderGacha();
+  if(tab==='more')renderMore();
+}
+
+function renderHome(){
+  const lv=getLv(),labor=getLaborCost(),daysLeft=G.nextPayday-G.day;
+  const nextLv=LEVELS.find(l=>l.lv===lv.lv+1);
+  const pct=nextLv?Math.min(100,Math.round((G.value-lv.min)/(nextLv.min-lv.min)*100)):100;
+  const warn=daysLeft<=5;
+  let h='';
+  if(warn)h+=`<div class="event-banner"><div style="font-size:11px;font-weight:700;color:#E67A00;">⚠️ 給料日まで${daysLeft}日！ 人件費: ${labor}万円</div></div>`;
+  h+=`<div class="stat-grid">
+    <div class="stat-box"><div class="stat-lbl">💰 所持金</div><div class="stat-val" style="color:${G.money<labor*2?'#DC2626':G.money<labor*4?'#D97706':'#2D1B00'}">${fmt(G.money)}</div><div class="stat-sub">人件費 ${labor}万/月</div></div>
+    <div class="stat-box"><div class="stat-lbl">📈 企業価値</div><div class="stat-val">${fmt(G.value)}</div><div class="stat-sub">Lv${lv.lv} ${lv.name}</div></div>
+    <div class="stat-box"><div class="stat-lbl">👥 社員</div><div class="stat-val">${G.staff.length+1}人</div><div class="stat-sub">営業力: ${getStaffBonus('sales')}</div></div>
+    <div class="stat-box"><div class="stat-lbl">🔁 Day</div><div class="stat-val">${G.day}</div><div class="stat-sub">Turn ${G.turn} / 給料日${daysLeft}日後</div></div>
+  </div>
+  <div style="background:#fff;border-radius:10px;padding:8px 12px;margin-bottom:10px;border:1.5px solid #FFD5A0;display:flex;align-items:center;gap:8px;">
+    <span style="font-size:11px;font-weight:700;color:#FF8C00;">Lv${lv.lv}</span>
+    <div style="flex:1;height:8px;background:#FFE8C0;border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:#FF8C00;border-radius:4px;"></div></div>
+    <span style="font-size:11px;color:#B07030;">${pct}%</span>
+  </div>`;
+  const ACTIONS=[
+    {id:'sales',name:'営業',icon:'📣',desc:'売上UP + 採用Pt獲得',winBase:50,drawBase:10,loseBase:-30,risk:'低',rc:'risk-low',ptReward:3},
+    {id:'dev',name:'開発',icon:'💻',desc:'ハイリスク・新製品開発',winBase:80,drawBase:15,loseBase:-60,risk:'高',rc:'risk-high',ptReward:1},
+    {id:'invest',name:'投資',icon:'📊',desc:'資金を投じてリターンを',winBase:120,drawBase:5,loseBase:-90,risk:'最高',rc:'risk-max',ptReward:2},
+    {id:'ad',name:'広告',icon:'📢',desc:'企業価値を直接引き上げ',winBase:60,drawBase:10,loseBase:-25,risk:'中',rc:'risk-mid',ptReward:1},
+    {id:'nego',name:'大型交渉',icon:'🤜',desc:'一発逆転を狙う',winBase:150,drawBase:20,loseBase:-80,risk:'最高',rc:'risk-max',ptReward:4},
+    {id:'save',name:'経費削減',icon:'✂️',desc:'リスクなし・確実に節約',winBase:20,drawBase:20,loseBase:0,risk:'なし',rc:'risk-none',ptReward:0},
+  ];
+  h+=`<div class="card"><div class="card-title">アクション — 勝利で採用Ptも獲得！</div><div class="action-grid">`;
+  ACTIONS.forEach(a=>{
+    const bonus=getStaffBonus(a.id==='ad'?'pr':a.id==='dev'?'tech':'sales');
+    const winAmt=Math.round(a.winBase*(1+bonus/100));
+    h+=`<div class="action-card" onclick="selectAction(${JSON.stringify(a).replace(/"/g,'&quot;')})">
+      <div class="action-icon">${a.icon}</div><div class="action-name">${a.name}</div>
+      <div class="action-desc">${a.desc}</div>
+      <span class="risk-tag ${a.rc}">リスク: ${a.risk}</span>
+      ${a.ptReward>0?`<div style="font-size:9px;color:#0D5FA0;margin-top:3px;">🎯 勝利で+${a.ptReward}pt</div>`:''}
+    </div>`;
+  });
+  h+=`</div></div>`;
+  h+=`<div class="log-scroll" id="home-log">${logs.slice(0,6).map(l=>`<div class="log-item">${l}</div>`).join('')}</div>`;
+  document.getElementById('view-home').innerHTML=h;
+  updateTop();
+}
+
+function selectAction(a){
+  if(a.id==='save'){
+    const bonus=getStaffBonus('sales');
+    const amt=Math.round(20*(1+bonus/200));
+    G.money+=amt;G.value+=Math.round(amt*0.1);
+    addLog(`[経費削減] +${amt}万円 節約`);
+    advanceTurn();return;
+  }
+  const bonus=getStaffBonus(a.id==='ad'?'pr':a.id==='dev'?'tech':'sales');
+  const winAmt=Math.round(a.winBase*(1+bonus/100));
+  pendingJK={
+    label:a.name,
+    desc:`社員ボーナス+${Math.round(bonus)}% 適用\n勝利: +${winAmt}〜${Math.round(winAmt*1.5)}万 / 敗北: ${a.loseBase}万${a.ptReward?`\n勝利で採用Pt +${a.ptReward}pt`:'' }`,
+    ptReward:a.ptReward||0,
+    onWin(){
+      const tot=winAmt+Math.round(winAmt*Math.random()*0.5);
+      if(a.id==='ad'){G.value+=tot;}else{G.money+=tot;G.value+=Math.round(tot*0.3);}
+      G.gachaPt+=a.ptReward||0;
+      G.staff.forEach(s=>{s.xp=(s.xp||0)+2;});
+      addLog(`[${a.name}] 勝利 +${tot}万${a.ptReward?` 採用Pt+${a.ptReward}`:''}`);
+      return`+${tot}万円獲得！${a.ptReward?` (+${a.ptReward}pt)`:'' }`;
+    },
+    onDraw(){
+      if(a.id==='ad')G.value+=a.drawBase;else G.money+=a.drawBase;
+      G.staff.forEach(s=>{s.xp=(s.xp||0)+1;});
+      addLog(`[${a.name}] 引き分け +${a.drawBase}万`);
+      return`引き分け +${a.drawBase}万`;
+    },
+    onLose(){
+      G.money+=a.loseBase;G.value+=Math.round(a.loseBase*0.2);
+      addLog(`[${a.name}] 敗北 ${a.loseBase}万`);
+      return`${a.loseBase}万の損失...`;
+    }
+  };
+  document.getElementById('jk-label').textContent='【'+a.name+'】じゃんけん！';
+  document.getElementById('jk-desc').textContent=pendingJK.desc;
+  document.getElementById('jk-hands').style.display='flex';
+  document.getElementById('jk-result').style.display='none';
+  document.getElementById('jk-log').innerHTML=logs.slice(0,4).map(l=>`<div class="log-item">${l}</div>`).join('');
+  showScreen('jk-screen');
+}
+
+function playJK(myHand){
+  const en=HANDS[Math.floor(Math.random()*3)];
+  document.getElementById('jk-hands').style.display='none';
+  document.getElementById('jk-vs').textContent=HEMOJI[myHand]+' VS '+HEMOJI[en];
+  const out=judgeJK(myHand,en);
+  let sub='',badge='';
+  if(out==='win'){G.wins++;sub=pendingJK.onWin();badge=`<span class="result-badge win-badge">勝利！</span>`;}
+  else if(out==='draw'){G.draws++;sub=pendingJK.onDraw();badge=`<span class="result-badge draw-badge">引き分け</span>`;}
+  else{G.losses++;sub=pendingJK.onLose();badge=`<span class="result-badge lose-badge">敗北...</span>`;}
+  document.getElementById('jk-outcome-badge').innerHTML=badge;
+  document.getElementById('jk-sub').textContent=sub;
+  document.getElementById('jk-result').style.display='block';
+  if(G.money<-200&&G.value<=0){addLog('💸 倒産！リセット');G.money=100;G.value=100;G.staff=[];}
+  save();updateTop();
+}
+
+function afterJK(){showScreen('main-screen');advanceTurn();}
+function judgeJK(my,en){if(my===en)return'draw';if((my==='グー'&&en==='チョキ')||(my==='チョキ'&&en==='パー')||(my==='パー'&&en==='グー'))return'win';return'lose';}
+
+function advanceTurn(){
+  G.turn++;G.day+=3;
+  if(G.day>=G.nextPayday)doPayday();
+  if(G.turn%12===0&&Math.random()<0.5){
+    const ev=BONUS_EVENTS[Math.floor(Math.random()*BONUS_EVENTS.length)];
+    const result=ev.effect(G);
+    addLog(`🎉 ${ev.name}: ${result}`);
+  }
+  save();switchTab('home');
+}
+
+function doPayday(){
+  G.nextPayday+=30;
+  const labor=getLaborCost();
+  if(labor===0){addLog('💸 給料日（無給）');return;}
+  if(G.money>=labor){G.money-=labor;G.totalLabor+=labor;addLog(`✅ 給料日 -${labor}万完了`);}
+  else{
+    addLog('⚠️ 給料不足！社員を1名解雇');
+    if(G.staff.length>0){const f=G.staff.pop();addLog(`😢 リストラ: ${f.name}`);}
+    G.money=Math.max(0,G.money-labor);
+  }
+}
+
+function renderStaff(){
+  let h=`<div class="card"><div class="card-title">在籍社員 ${G.staff.length+1}名</div>`;
+  h+=`<div style="background:#FFF8F0;border-radius:10px;border:1.5px solid #FFD5A0;padding:10px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+    <div class="staff-avatar">😎</div>
+    <div><div class="staff-name">${G.player} 社長</div><div class="staff-role">代表取締役 / 無給</div></div>
+  </div>`;
+  if(G.staff.length===0){h+=`<div style="text-align:center;padding:20px;color:#B07030;font-size:13px;">社員がいません！<br>ガチャで採用しよう</div>`;}
+  G.staff.forEach((s,i)=>{
+    const lv=Math.floor((s.xp||0)/50)+1;
+    const nextXp=lv*50;
+    const pct=Math.round(((s.xp||0)%50)/50*100);
+    const morale=s.morale||50;
+    const bc='badge-'+s.rarity.toLowerCase();
+    h+=`<div class="staff-card">
+      <div class="staff-header">
+        <div class="staff-avatar">${s.emoji}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="staff-name">${s.name} <span class="${bc}">${s.rarity}</span></div>
+          <div class="staff-role">${s.role} / 月給${s.wage}万 / 経験Lv${lv}</div>
+          <div class="staff-xp-track"><div class="staff-xp-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:10px;color:#B07030;">士気</div>
+          <div style="font-size:14px;font-weight:700;color:${morale>=70?'#16A34A':morale>=40?'#D97706':'#DC2626'}">${morale}%</div>
+        </div>
+      </div>
+      <div class="stat-pills" style="margin-bottom:8px;">
+        <span class="stat-pill">営業${s.sales}</span><span class="stat-pill">技術${s.tech}</span>
+        <span class="stat-pill">広報${s.pr}</span><span class="stat-pill">運${s.luck}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+        <button style="padding:6px;font-size:11px;border-radius:8px;border:1.5px solid #22C55E;background:${s.onRest?'#22C55E':'transparent'};color:${s.onRest?'#fff':'#16A34A'};cursor:pointer;font-weight:700;" onclick="toggleRest(${i})">${s.onRest?'🛋️休暇中':'😴休暇にする'}</button>
+        <button style="padding:6px;font-size:11px;border-radius:8px;border:1.5px solid #3B82F6;background:transparent;color:#2563EB;cursor:pointer;font-weight:700;" onclick="trainStaff(${i})">📚特訓(-30万)</button>
+        <button style="padding:6px;font-size:11px;border-radius:8px;border:1.5px solid #EF4444;background:transparent;color:#DC2626;cursor:pointer;font-weight:700;" onclick="fireStaff(${i})">🔥解雇</button>
+      </div>
+    </div>`;
+  });
+  h+=`</div>`;
+  h+=`<div class="card"><div class="card-title">社員図鑑 ${G.collected.size}/${STAFF_DB.length}種</div>`;
+  h+=`<div style="background:#FFE8C0;border-radius:6px;height:8px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:${Math.round(G.collected.size/STAFF_DB.length*100)}%;background:#FF8C00;"></div></div>`;
+  h+=`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">`;
+  STAFF_DB.forEach(s=>{
+    const found=G.collected.has(s.id);
+    const bc='badge-'+s.rarity.toLowerCase();
+    h+=`<div style="background:${found?'#FFF8F0':'#F9FAFB'};border-radius:10px;border:1.5px solid ${found?'#FFD5A0':'#E5E7EB'};padding:8px;display:flex;align-items:center;gap:8px;opacity:${found?1:0.5};">
+      <span style="font-size:20px;">${found?s.emoji:'❓'}</span>
+      <div><div style="font-size:11px;font-weight:700;">${found?s.name:'???'}</div><span class="${bc}">${s.rarity}</span></div>
+    </div>`;
+  });
+  h+=`</div></div>`;
+  document.getElementById('view-staff').innerHTML=h;
+}
+
+function toggleRest(i){
+  G.staff[i].onRest=!G.staff[i].onRest;
+  const s=G.staff[i];
+  if(s.onRest){s.morale=Math.min(100,(s.morale||50)+15);addLog(`😴 ${s.name}が休暇に入った（士気+15）`);}
+  else{addLog(`💪 ${s.name}が復帰！`);}
+  save();renderStaff();updateTop();
+}
+
+function trainStaff(i){
+  if(G.money<30){alert('資金不足！30万必要');return;}
+  G.money-=30;
+  const s=G.staff[i];
+  s.xp=(s.xp||0)+25;s.morale=Math.min(100,(s.morale||50)+10);
+  const keys=['sales','tech','pr','luck'];
+  const k=keys[Math.floor(Math.random()*keys.length)];
+  s[k]+=2;
+  addLog(`📚 ${s.name} 特訓！${k}+2 XP+25`);
+  save();renderStaff();updateTop();
+}
+
+function fireStaff(i){
+  if(confirm(`${G.staff[i].name}を解雇しますか？`)){
+    const f=G.staff.splice(i,1)[0];
+    addLog(`🔥 ${f.name}を解雇した`);
+    save();renderStaff();updateTop();
+  }
+}
+
+function renderOffice(){
+  const bonus=getOfficeBonus();
+  let h=`<div class="card"><div class="card-title">オフィス (${G.office.filter(Boolean).length}/12マス)</div>`;
+  h+=`<div style="font-size:10px;color:#B07030;margin-bottom:8px;background:#FFF8F0;border-radius:8px;padding:6px 10px;border:1px solid #FFD5A0;">ボーナス: 営業+${bonus.sales||0}% / 技術+${bonus.tech||0}% / 広報+${bonus.pr||0}% / 運+${bonus.luck||0}%</div>`;
+  h+=`<div class="office-grid">`;
+  G.office.forEach((cell,i)=>{
+    const it=cell?OFFICE_ITEMS.find(x=>x.id===cell):null;
+    h+=`<div class="office-cell${!cell?' empty':''}" onclick="selectCell(${i})">
+      ${it?`<div>${it.emoji}</div><div class="cell-lbl">${it.name.slice(0,4)}</div>`:`<div style="font-size:20px;color:#FFB347;">+</div>`}
+    </div>`;
+  });
+  h+=`</div><div style="font-size:10px;color:#B07030;text-align:center;">セルをタップで配置・交換・撤去</div></div>`;
+  h+=`<div class="card"><div class="card-title">購入できる家具</div>`;
+  OFFICE_ITEMS.forEach(it=>{
+    const count=G.office.filter(c=>c===it.id).length;
+    h+=`<div class="shop-item">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:22px;">${it.emoji}</span>
+        <div><div style="font-size:12px;font-weight:700;">${it.name}</div><div style="font-size:10px;color:#B07030;">${it.effect}</div></div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:#B07030;margin-bottom:4px;">所持: ${count}個</div>
+        <button style="padding:5px 12px;font-size:11px;font-weight:700;border-radius:8px;border:2px solid #FF8C00;background:#FF8C00;color:#fff;cursor:pointer;" onclick="buyFurniture('${it.id}',${it.price})">💰${it.price}万</button>
+      </div>
+    </div>`;
+  });
+  h+=`</div>`;
+  document.getElementById('view-office').innerHTML=h;
+  updateTop();
+}
+
+function selectCell(idx){
+  const current=G.office[idx];
+  const modal=document.getElementById('office-modal');
+  let h=`<div style="font-weight:700;font-size:15px;margin-bottom:14px;">マス ${idx+1} — ${current?OFFICE_ITEMS.find(x=>x.id===current)?.name+'を変更':'空きスペース'}</div>`;
+  if(current){
+    h+=`<button class="btn btn-danger" style="margin-bottom:8px;" onclick="removeCell(${idx})">🗑️ ${OFFICE_ITEMS.find(x=>x.id===current)?.name}を撤去</button>`;
+    h+=`<div style="font-size:11px;font-weight:700;color:#B07030;margin-bottom:8px;">別のものと交換する：</div>`;
+  }
+  OFFICE_ITEMS.forEach(it=>{
+    const owned=G.office.some((c,i)=>c===it.id&&i!==idx);
+    h+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:#FFF8F0;border-radius:8px;border:1.5px solid #FFD5A0;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:20px;">${it.emoji}</span><div><div style="font-size:12px;font-weight:700;">${it.name}</div><div style="font-size:10px;color:#B07030;">${it.effect}</div></div></div>
+      <button style="padding:5px 12px;font-size:11px;font-weight:700;border-radius:8px;border:2px solid ${current?'#3B82F6':'#FF8C00'};background:${current?'#3B82F6':'#FF8C00'};color:#fff;cursor:pointer;" onclick="placeItem(${idx},'${it.id}',${it.price})">${current?'交換':'💰'+it.price+'万'}</button>
+    </div>`;
+  });
+  h+=`<button class="btn" style="margin-top:8px;" onclick="closeOfficeModal()">閉じる</button>`;
+  document.getElementById('office-modal-content').innerHTML=h;
+  modal.style.display='flex';
+}
+
+function placeItem(idx,id,price){
+  const current=G.office[idx];
+  if(!current&&G.money<price){alert('お金が足りません！');return;}
+  if(!current)G.money-=price;
+  G.office[idx]=id;
+  const it=OFFICE_ITEMS.find(x=>x.id===id);
+  addLog(`🏠 ${it.name}を${current?'交換':'設置'}`);
+  save();closeOfficeModal();renderOffice();updateTop();
+}
+
+function removeCell(idx){
+  const id=G.office[idx];
+  const it=OFFICE_ITEMS.find(x=>x.id===id);
+  G.office[idx]=null;
+  addLog(`🗑️ ${it?.name}を撤去`);
+  save();closeOfficeModal();renderOffice();
+}
+
+function closeOfficeModal(){document.getElementById('office-modal').style.display='none';}
+
+function renderGacha(){
+  const h=`<div class="card">
+    <div class="card-title">社員採用ガチャ</div>
+    <div style="background:#FFF3CD;border-radius:10px;padding:10px 12px;margin-bottom:10px;border:1.5px solid #FED7AA;">
+      <div style="font-size:12px;font-weight:700;color:#7C2D12;">採用ポイントの貯め方</div>
+      <div style="font-size:11px;color:#92400E;margin-top:4px;line-height:1.6;">営業勝利 +3pt / 大型交渉勝利 +4pt<br>投資勝利 +2pt / その他勝利 +1pt<br>現在の所持ポイント: <b>${G.gachaPt}pt</b></div>
+    </div>
+    <div style="text-align:center;background:#FFF8F0;border-radius:10px;padding:12px;margin-bottom:10px;border:1.5px solid #FFD5A0;">
+      <div style="font-size:28px;font-weight:700;color:#FF8C00;">${G.gachaPt}<span style="font-size:14px;">pt</span></div>
+      <div style="font-size:11px;color:#B07030;">1回 ${GACHA_COST_PT}pt / 10連 ${GACHA_COST_PT*10}pt</div>
+    </div>
+    <button class="btn btn-gacha" onclick="doGacha(1)" ${G.gachaPt<GACHA_COST_PT?'disabled style="opacity:0.5;"':''}>🎰 1回引く (${GACHA_COST_PT}pt)</button>
+    <button class="btn btn-gacha" onclick="doGacha(10)" style="background:linear-gradient(135deg,#7C3AED,#DB2777);" ${G.gachaPt<GACHA_COST_PT*10?'disabled style="opacity:0.5;background:linear-gradient(135deg,#7C3AED,#DB2777);"':''}>🎰✨ 10連 (${GACHA_COST_PT*10}pt)</button>
+  </div>
+  <div class="card"><div class="card-title">排出率</div>
+    ${RARITIES.map((r,i)=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #FFE8C0;"><span class="rarity-${r.toLowerCase()}" style="font-weight:700;">${r}</span><span style="font-size:11px;color:#B07030;">${RARITY_WEIGHT[i]}%</span></div>`).join('')}
+  </div>`;
+  document.getElementById('view-gacha').innerHTML=h;
+}
+
+function rollRarity(){let r=Math.random()*100;for(let i=0;i<RARITIES.length;i++){if((r-=RARITY_WEIGHT[i])<=0)return RARITIES[i];}return'N';}
+
+function doGacha(times){
+  if(G.gachaPt<GACHA_COST_PT*times){alert(`採用ポイントが足りません！\n必要: ${GACHA_COST_PT*times}pt / 現在: ${G.gachaPt}pt`);return;}
+  G.gachaPt-=GACHA_COST_PT*times;G.gachaCount=(G.gachaCount||0)+times;
+  const results=[];
+  for(let i=0;i<times;i++){
+    const r=rollRarity();
+    const pool=STAFF_DB.filter(s=>s.rarity===r);
+    const s={...pool[Math.floor(Math.random()*pool.length)],xp:0,morale:50,onRest:false};
+    const isNew=!G.collected.has(s.id);
+    G.collected.add(s.id);G.staff.push(s);G.hired++;
+    addLog(`🎰 採用: ${s.name} [${s.rarity}]${isNew?' NEW!':''}`);
+    results.push({...s,isNew});
+  }
+  save();updateTop();
+  let h='';
+  if(results.length===1){
+    const s=results[0];const bc='badge-'+s.rarity.toLowerCase();
+    h=`<div style="text-align:center;padding:20px 0;">
+      ${s.isNew?`<div style="background:#FEF3C7;color:#92400E;font-size:11px;font-weight:700;padding:4px 16px;border-radius:99px;display:inline-block;margin-bottom:10px;">NEW RECRUIT!</div>`:''}
+      <div class="gacha-card-anim" style="background:#FFF8F0;border-radius:20px;border:3px solid #FF8C00;padding:24px;margin-bottom:16px;display:inline-block;min-width:200px;">
+        <div style="font-size:56px;margin-bottom:8px;">${s.emoji}</div>
+        <div style="font-size:20px;font-weight:700;margin-bottom:4px;">${s.name}</div>
+        <span class="${bc}">${s.rarity}</span>
+        <div style="font-size:12px;color:#B07030;margin:8px 0;">${s.role}</div>
+        <div style="font-size:11px;color:#6B7280;font-style:italic;margin-bottom:10px;">${s.desc}</div>
+        <div class="stat-pills" style="justify-content:center;"><span class="stat-pill">営業${s.sales}</span><span class="stat-pill">技術${s.tech}</span><span class="stat-pill">広報${s.pr}</span><span class="stat-pill">運${s.luck}</span></div>
+      </div>
+    </div>`;
+  } else {
+    h=`<div style="padding-bottom:8px;"><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">`;
+    results.forEach(s=>{const bc='badge-'+s.rarity.toLowerCase();
+      h+=`<div class="gacha-card-anim" style="background:#FFF8F0;border-radius:12px;border:2px solid ${s.rarity==='UR'?'#DC2626':s.rarity==='SSR'?'#D97706':s.rarity==='SR'?'#7C3AED':'#FFD5A0'};padding:10px;text-align:center;">
+        ${s.isNew?`<div style="font-size:8px;color:#D97706;font-weight:700;">NEW</div>`:''}
+        <div style="font-size:28px;">${s.emoji}</div>
+        <div style="font-size:11px;font-weight:700;">${s.name}</div>
+        <span class="${bc}">${s.rarity}</span>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  }
+  document.getElementById('gacha-result-content').innerHTML=h;
+  showScreen('gacha-screen');
+}
+
+function closeGachaScreen(){showScreen('main-screen');switchTab('gacha');}
+
+function renderMore(){
+  const lv=getLv();
+  let h=`<div class="card"><div class="card-title">会社の戦績</div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-lbl">勝利数</div><div class="stat-val">${G.wins}</div></div>
+      <div class="stat-box"><div class="stat-lbl">敗北数</div><div class="stat-val">${G.losses}</div></div>
+      <div class="stat-box"><div class="stat-lbl">総人件費</div><div class="stat-val">${fmt(G.totalLabor)}</div></div>
+      <div class="stat-box"><div class="stat-lbl">採用数</div><div class="stat-val">${G.hired}人</div></div>
+      <div class="stat-box"><div class="stat-lbl">ガチャ回数</div><div class="stat-val">${G.gachaCount||0}</div></div>
+      <div class="stat-box"><div class="stat-lbl">図鑑達成率</div><div class="stat-val">${Math.round(G.collected.size/STAFF_DB.length*100)}%</div></div>
+    </div>
+  </div>`;
+  h+=`<button class="btn btn-danger" onclick="if(confirm('全データをリセットしますか？')){localStorage.removeItem('jks_v3');location.reload();}">⚠️ データをリセット</button>`;
+  document.getElementById('view-more').innerHTML=h;
+}
+
+function setupGame(){
+  const cname=document.getElementById('s-cname').value.trim()||'株式会社スタートアップ';
+  const pname=document.getElementById('s-pname').value.trim()||'社長';
+  initG(cname,pname);save();
+  showScreen('main-screen');switchTab('home');
+}
+
+load();
+if(G.company){showScreen('main-screen');switchTab('home');}
+else{showScreen('setup-screen');}
+</script>
+
+</body>
+</html>
